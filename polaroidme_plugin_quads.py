@@ -3,22 +3,23 @@
 # === polaroidme plugin-interface ===
 # --- all polaroidme-plugins (generators, filters) must implement this
 import logging
+import random
 import string
 
 name = "quads"
-description = "https://github.com/fogleman/Quads"
+description = "based on https://github.com/fogleman/Quads"
 kwargs = {  'image' : None,
-            'mode' : 2,
+            'mode' : random.randint(1,3),
             'iterations' : 1024,
             'leaf_size'  : 4,
             'padding'    : 1,
-            'fill_color' : (0,0,0),
+            'fill_color' : (255,255,255),
             'error_rate' : 0.5,
             'area_power' : 0.25,
             'output_scale' : 1,
          }
 args = None
-author = "Michael Fogleman"
+author = "Michael Fogleman,"
 version = "0.1.0"
 
 def run(**kwargs):
