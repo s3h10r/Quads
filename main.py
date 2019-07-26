@@ -29,7 +29,7 @@ def color_from_histogram(hist):
     g, ge = weighted_average(hist[256:512])
     b, be = weighted_average(hist[512:768])
     e = re * 0.2989 + ge * 0.5870 + be * 0.1140
-    return (r, g, b), e
+    return (int(r), int(g), int(b)), e
 
 def rounded_rectangle(draw, box, radius, color):
     l, t, r, b = box
@@ -79,9 +79,23 @@ class Quad(object):
             result.extend(child.get_leaf_nodes(max_depth))
         return result
 
+    def __lt__(self, other):
+        l, t, r ,b = self.box
+        o_l, o_t, o_r, o_b = other.box
+        h = b - t
+        w = r - l
+        size = h * w
+        o_h = o_b - o_t
+        o_w = o_r - o_l
+        o_size = o_h* o_w
+        return size < o_size
+
 class Model(object):
-    def __init__(self, path):
-        self.im = Image.open(path).convert('RGB')
+    def __init__(self, image):
+        if isinstance(image, Image.Image):
+            self.im = image
+        else:
+            self.im = Image.open(path).convert('RGB')
         self.width, self.height = self.im.size
         self.heap = []
         self.root = Quad(self, (0, 0, self.width, self.height), 0)
@@ -112,42 +126,61 @@ class Model(object):
         draw.rectangle((0, 0, self.width * m, self.height * m), FILL_COLOR)
         for quad in self.root.get_leaf_nodes(max_depth):
             l, t, r, b = quad.box
-            box = (l * m + dx, t * m + dy, r * m - 1, b * m - 1)
+            box = (int(l * m + dx), int(t * m + dy), int(r * m - 1), int(b * m - 1))
             if MODE == MODE_ELLIPSE:
                 draw.ellipse(box, quad.color)
+
             elif MODE == MODE_ROUNDED_RECTANGLE:
                 radius = m * min((r - l), (b - t)) / 4
                 rounded_rectangle(draw, box, radius, quad.color)
             else:
                 draw.rectangle(box, quad.color)
         del draw
-        im.save(path, 'PNG')
+        if path:
+            im.save(path, 'PNG')
+        else:
+            return im
 
-def main():
-    args = sys.argv[1:]
-    if len(args) != 1:
-        print 'Usage: python main.py input_image'
-        return
-    model = Model(args[0])
+def main(image, mode = 2, iterations=ITERATIONS, leaf_size = 4, padding = 1, fill_color = (0,0,0), error_rate= 0.5, area_power = 0.25, output_scale = 1):
+    global MODE
+    global ITERATIONS
+    global LEAF_SIZE
+    global PADDING
+    global FILL_COLOR
+    global SAVE_FRAMES
+    global ERROR_RATE
+    global AREA_POWER
+    global OUTPUT_SCALE
+    ITERATIONS = iterations
+    MODE = mode
+    LEAF_SIZE = leaf_size
+    PADDING = padding
+    FILL_COLOR = fill_color
+    FILL_COLOR = tuple([int(el) for el in fill_color])
+    ERROR_RATE = error_rate
+    AREA_POWER = area_power
+    OUTPUT_SCALE = output_scale
+
+    model = Model(image)
     previous = None
-    for i in range(ITERATIONS):
+    for i in range(iterations):
         error = model.average_error()
         if previous is None or previous - error > ERROR_RATE:
-            print i, error
+            print(i, error)
             if SAVE_FRAMES:
                 model.render('frames/%06d.png' % i)
             previous = error
         model.split()
-    model.render('output.png')
-    print '-' * 32
+    return model.render(path=None)
+    print('-' * 32)
     depth = Counter(x.depth for x in model.quads)
     for key in sorted(depth):
         value = depth[key]
         n = 4 ** key
         pct = 100.0 * value / n
-        print '%3d %8d %8d %8.2f%%' % (key, n, value, pct)
-    print '-' * 32
-    print '             %8d %8.2f%%' % (len(model.quads), 100)
+        print('%3d %8d %8d %8.2f%%' % (key, n, value, pct))
+    print('-' * 32)
+    print('             %8d %8.2f%%' % (len(model.quads), 100))
     # for max_depth in range(max(depth.keys()) + 1):
     #     model.render('out%d.png' % max_depth, max_depth)
 

@@ -7,7 +7,8 @@ import string
 
 name = "quads"
 description = "https://github.com/fogleman/Quads"
-kwargs = {  'mode' : 2,
+kwargs = {  'image' : None,
+            'mode' : 2,
             'iterations' : 1024,
             'leaf_size'  : 4,
             'padding'    : 1,
@@ -24,13 +25,7 @@ def run(**kwargs):
     """
     this is the interface/wrapper around the functionality of the plugin.
     """
-    #call the plugin-specific function(s) here
-    if not kwargs :
-        #use default values if no args given
-        return _somework()
-    else:
-        return _somework(**kwargs)
-
+    return quads_main(**kwargs)
 # --- END all polaroidme-plugins (generators, filters) must implement this
 
 def get_plugin_doc(format='text'):
@@ -62,3 +57,5 @@ if __name__ == '__main__':
 # --- .. here comes the plugin-specific part to get some work done...
 def _somework(arg1=None, arg2 = None):
     return ("Hello from Plugin dummy1. arg1=%s, arg2=%s " % (arg1,arg2))
+
+from .main import main as quads_main
