@@ -1,1 +1,1 @@
-polaroidme_plugin_quads.py
+egw_plugin_quads.py
